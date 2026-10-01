@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบคลังรูปภาพ - โรงเรียนกุศลวิทยา</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+          },
+          colors: {
+            kuson: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              800: '#1e3a8a',
+              900: '#0f172a',
+              gold: '#d97706',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Prompt', sans-serif; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.8);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(203, 213, 225, 0.9);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-800 bg-white custom-scrollbar antialiased">
+
+  <div id="app" class="min-h-screen flex flex-col justify-between bg-white">
+    
+    <!-- TOP NAVIGATION BAR (Visible when logged in) -->
+    <header id="mainHeader" class="hidden sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 lg:px-8 py-3">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <!-- Logo & Branding -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('all')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-md flex items-center justify-center">
+            <div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+              <i data-lucide="camera" class="w-5 h-5 text-indigo-600"></i>
+            </div>
+          </div>
+          <div>
+            <h1 class="text-base font-bold text-slate-900 leading-tight">โรงเรียนกุศลวิทยา</h1>
+            <p class="text-xs text-indigo-600 font-medium">ระบบคลังภาพกิจกรรมดิจิทัล</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs & Actions -->
+        <div class="flex items-center space-x-3">
+          <button onclick="openCreateModal()" class="hidden sm:flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-md transition duration-200 transform hover:-translate-y-0.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>สร้างอัลบั้ม / อัปโหลดหลายภาพ</span>
+          </button>
+          
+          <!-- User Profile Dropdown / Logged User Badge -->
+          <div class="flex items-center space-x-3 pl-3 border-l border-slate-200">
+            <div id="userAvatar" class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow">
+              U
+            </div>
+            <div class="hidden md:block text-left">
+              <p id="userNameDisplay" class="text-xs font-semibold text-slate-800">ผู้ใช้งาน</p>
+              <p id="userRoleDisplay" class="text-[10px] text-indigo-600 font-medium">นักเรียน</p>
+            </div>
+            <button onclick="handleLogout()" class="p-2 text-slate-500 hover:text-red-600 hover:bg-slate-100 rounded-lg transition" title="ออกจากระบบ" aria-label="ออกจากระบบ">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden bg-slate-50/50">
+      
+      <!-- Background Ambient Glows -->
+      <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-100/60 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- VIEW 1: AUTHENTICATION CONTAINER (LOGIN / REGISTER) -->
+      <div id="authSection" class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 glass-card rounded-3xl shadow-xl overflow-hidden border border-slate-200 my-auto bg-white">
+        
+        <!-- Left Side: School Branding Hero Banner -->
+        <div class="lg:col-span-5 relative p-8 lg:p-12 flex flex-col justify-between bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white overflow-hidden min-h-[320px]">
+          <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+          
+          <div class="relative z-10">
+            <div class="inline-flex items-center space-x-2 bg-amber-400/20 border border-amber-400/40 px-3 py-1.5 rounded-full text-amber-300 text-xs font-medium mb-6">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+              <span>ระบบต้นแบบ (เดโม) สำหรับทดลองใช้</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+              คลังภาพกิจกรรม<br/>
+              <span class="text-amber-300">โรงเรียนกุศลวิทยา</span>
+            </h2>
+            <p class="mt-3 text-indigo-100 text-xs sm:text-sm leading-relaxed">
+              รวบรวมและแบ่งปันความทรงจำ ความสำเร็จ และกิจกรรมอันน่าประทับใจของคณะครู นักเรียน และบุคลากร
+            </p>
+          </div>
+
+          <div class="relative z-10 mt-8">
+            <div class="grid grid-cols-2 gap-3 pt-6 border-t border-indigo-700/60">
+              <div>
+                <p id="statPhotos" class="text-xl font-bold text-white">0</p>
+                <p class="text-[11px] text-indigo-200">รูปภาพกิจกรรม</p>
+              </div>
+              <div>
+                <p class="text-xl font-bold text-amber-300">4</p>
+                <p class="text-[11px] text-indigo-200">หมวดหมู่กิจกรรม</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Forms (Login / Register Switcher) -->
+        <div class="lg:col-span-7 p-6 sm:p-10 bg-white flex flex-col justify-center">
+          
+          <!-- Auth Tabs -->
+          <div class="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-2xl mb-6 border border-slate-200">
+            <button id="tabLoginBtn" onclick="toggleAuthMode('login')" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition duration-200 bg-indigo-600 text-white shadow-sm">
+              เข้าสู่ระบบ
+            </button>
+            <button id="tabRegisterBtn" onclick="toggleAuthMode('register')" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition duration-200 text-slate-600 hover:text-slate-900">
+              ลงทะเบียนใหม่
+            </button>
+          </div>
+
+          <!-- Quick Demo Accounts Bar -->
+          <div id="demoPills" class="mb-5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+            <p class="text-slate-600 font-medium mb-1.5 flex items-center">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500 mr-1.5"></i> บัญชีทดลองเข้าใช้งานรวดเร็ว:
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="fillDemo('teacher')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-lg text-[11px] font-medium transition">
+                ครูผู้ดูแลระบบ (Admin)
+              </button>
+              <button onclick="fillDemo('student')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-[11px] font-medium transition">
+                นักเรียน (Student)
+              </button>
+            </div>
+          </div>
+
+          <!-- FORM 1: LOGIN FORM -->
+          <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">รหัสประจำตัว / อีเมลโรงเรียน</label>
+              <div class="relative">
+                <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+                <input type="text" id="loginId" required placeholder="เช่น 6601234 หรือ teacher@kuson.ac.th" class="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่าน</label>
+              <div class="relative">
+                <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+                <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs pt-1">
+              <span></span>
+              <a href="javascript:void(0)" onclick="showToast('กรุณาติดต่อคุณครูผู้ดูแลระบบคลังภาพเพื่อรีเซ็ตรหัสผ่าน', 'info')" class="text-indigo-600 hover:underline font-medium">ลืมรหัสผ่าน?</a>
+            </div>
+
+            <!-- Security Captcha Check -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+              <div class="flex items-center space-x-2 text-xs text-slate-700">
+                <span class="font-medium text-slate-500">ยืนยันความปลอดภัย:</span>
+                <span id="captchaQuestion" class="font-bold text-indigo-600 text-sm">5 + 3 = ?</span>
+              </div>
+              <input type="number" id="captchaAnswer" required placeholder="คำตอบ" class="w-20 bg-white border border-slate-300 rounded-lg px-2 py-1 text-center text-sm text-slate-900 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-md transition duration-200 flex items-center justify-center space-x-2">
+              <i data-lucide="log-in" class="w-4 h-4"></i>
+              <span>เข้าสู่ระบบ</span>
+            </button>
+          </form>
+
+          <!-- FORM 2: REGISTER FORM -->
+          <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-3 hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล</label>
+                <input type="text" id="regName" required placeholder="นายสมชาย ใจดี" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">สถานะ / บทบาท</label>
+                <select id="regRole" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-500">
+                  <option value="นักเรียน">นักเรียน</option>
+                  <option value="ครูและบุคลากร">ครูและบุคลากร</option>
+                  <option value="ศิษย์เก่า">ศิษย์เก่า</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">รหัสประจำตัว / อีเมลโรงเรียน</label>
+              <input type="text" id="regId" required placeholder="เช่น 6609988 หรือ name@kuson.ac.th" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่านใหม่</label>
+              <div class="relative">
+                <input type="password" id="regPassword" oninput="checkPasswordStrength(this.value)" required placeholder="อย่างน้อย 6 ตัวอักษร" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+              </div>
+              <!-- Realtime Password Security Indicator -->
+              <div class="mt-1.5 flex items-center space-x-1.5">
+                <div id="strBar1" class="h-1 flex-1 bg-slate-200 rounded-full transition-all"></div>
+                <div id="strBar2" class="h-1 flex-1 bg-slate-200 rounded-full transition-all"></div>
+                <div id="strBar3" class="h-1 flex-1 bg-slate-200 rounded-full transition-all"></div>
+                <span id="strText" class="text-[10px] text-slate-500 ml-1">ความปลอดภัยรหัสผ่าน</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">ยืนยันรหัสผ่าน</label>
+              <input type="password" id="regConfirmPassword" required placeholder="กรอกรหัสผ่านอีกครั้ง" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="pt-1">
+              <label class="flex items-start space-x-2 cursor-pointer text-[11px] text-slate-600">
+                <input type="checkbox" required class="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-0">
+                <span>ฉันยินยอมปฏิบัติตามนโยบายความคุ้มครองข้อมูลส่วนบุคคลและภาพถ่ายกิจกรรมโรงเรียนกุศลวิทยา</span>
+              </label>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-md transition duration-200 flex items-center justify-center space-x-2 mt-2">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+              <span>สมัครสมาชิกใหม่</span>
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+      <!-- VIEW 2: GALLERY DASHBOARD (Visible when Logged In) -->
+      <div id="gallerySection" class="hidden w-full max-w-7xl mx-auto space-y-6">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="relative z-10 max-w-2xl">
+            <span class="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 mb-3">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>ยินดีต้อนรับสู่ระบบคลังภาพ</span>
+            </span>
+            <h2 class="text-xl sm:text-2xl font-bold text-white">
+              คลังภาพกิจกรรมและบันทึกความทรงจำ โรงเรียนกุศลวิทยา
+            </h2>
+            <p class="text-xs sm:text-sm text-indigo-100 mt-1">
+              ท่านสามารถรับชม สร้างอัลบั้มใหม่ และอัปโหลดภาพกิจกรรมได้คราวละหลายๆ ภาพได้อย่างสะดวกและปลอดภัย
+            </p>
+          </div>
+          <div class="relative z-10 flex items-center space-x-3">
+            <button onclick="openCreateModal()" class="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm shadow-lg transition flex items-center justify-center space-x-2">
+              <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+              <span>อัปโหลดอัลบั้มหลายภาพ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Control Bar -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          
+          <!-- Category Filter Pills -->
+          <div class="flex items-center space-x-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 custom-scrollbar">
+            <button onclick="filterCategory('ทั้งหมด', this)" class="cat-pill active-cat px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-indigo-600 text-white shadow-sm">
+              ทั้งหมด
+            </button>
+            <button onclick="filterCategory('กิจกรรมวิชาการ', this)" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+              กิจกรรมวิชาการ
+            </button>
+            <button onclick="filterCategory('กีฬาสี', this)" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+              กีฬาสี
+            </button>
+            <button onclick="filterCategory('คุณธรรมและศาสนา', this)" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+              คุณธรรมและศาสนา
+            </button>
+            <button onclick="filterCategory('ภาพบรรยากาศโรงเรียน', this)" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+              ภาพบรรยากาศ
+            </button>
+            <button onclick="filterCategory('อัลบั้มของฉัน', this)" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">
+              <i data-lucide="user" class="w-3 h-3 inline mr-1"></i>อัลบั้มของฉัน
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative w-full md:w-64">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+            <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="ค้นหาอัลบั้ม..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- ALBUMS GRID DISPLAY CONTAINER -->
+        <div id="albumsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Album Cards will be populated dynamically via JavaScript -->
+        </div>
+
+        <!-- Empty State Notice -->
+        <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <i data-lucide="image-off" class="w-12 h-12 text-slate-400 mx-auto mb-3"></i>
+          <p class="text-slate-700 font-medium text-sm">ไม่พบอัลบั้มรูปภาพตามเงื่อนไข</p>
+          <p class="text-xs text-slate-500 mt-1">ลองเปลี่ยนคำค้นหา หรือสร้างอัลบั้มภาพใหม่ได้เลย</p>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 px-4 text-center text-xs text-slate-500">
+      <p>© 2026 โรงเรียนกุศลวิทยา - ระบบจัดเก็บคลังภาพกิจกรรมดิจิทัล (เวอร์ชันทดลอง)</p>
+    </footer>
+  </div>
+
+
+  <!-- MODAL 1: CREATE ALBUM / UPLOAD PHOTOS -->
+  <div id="createModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white max-w-xl w-full rounded-3xl border border-slate-200 p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+      
+      <!-- Close Button -->
+      <button onclick="closeCreateModal()" aria-label="ปิดหน้าต่าง" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-5">
+        <div class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+          <i data-lucide="folder-plus" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">สร้างอัลบั้มใหม่ / อัปโหลดรูปภาพ</h3>
+          <p class="text-xs text-slate-500">เพิ่มรูปภาพกิจกรรมของโรงเรียนเข้าสู่คลังรูปภาพ</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleCreateAlbum(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">ชื่ออัลบั้มกิจกรรม <span class="text-red-500">*</span></label>
+          <input type="text" id="newAlbumTitle" required placeholder="เช่น กิจกรรมแข่งกีฬาสีประจำปี 2569" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">หมวดหมู่กิจกรรม</label>
+            <select id="newAlbumCategory" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-500">
+              <option value="กิจกรรมวิชาการ">กิจกรรมวิชาการ</option>
+              <option value="กีฬาสี">กีฬาสี</option>
+              <option value="คุณธรรมและศาสนา">คุณธรรมและศาสนา</option>
+              <option value="ภาพบรรยากาศโรงเรียน">ภาพบรรยากาศโรงเรียน</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">ระดับความเป็นส่วนตัว</label>
+            <select id="newAlbumPrivacy" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-500">
+              <option value="สาธารณะ">สาธารณะ (มองเห็นทุกคน)</option>
+              <option value="เฉพาะภายใน">เฉพาะภายในโรงเรียน</option>
+              <option value="ส่วนตัว">ส่วนตัว (เฉพาะฉัน)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">รายละเอียด / คำอธิบายเพิ่มเติม</label>
+          <textarea id="newAlbumDesc" rows="2" placeholder="อธิบายสั้นๆ เกี่ยวกับกิจกรรมนี้..." class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <!-- Drag & Drop / File Picker Area for Multiple Photos -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-slate-700">อัปโหลดไฟล์รูปภาพ (เลือกได้หลายภาพพร้อมกัน) <span class="text-red-500">*</span></label>
+            <span id="selectedCountBadge" class="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+              เลือกแล้ว 0 รูป
+            </span>
+          </div>
+
+          <div id="dropZone" onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-5 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/40 transition">
+            <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFileSelect(event)" class="hidden">
+            <i data-lucide="images" class="w-8 h-8 text-indigo-500 mx-auto mb-1.5"></i>
+            <p class="text-xs text-slate-700 font-medium">คลิกเพื่อเลือกไฟล์ หรือลากรูปภาพหลายๆ ไฟล์มาวางที่นี่</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (สามารถเลือกได้หลายภาพพร้อมกัน)</p>
+          </div>
+
+          <!-- Quick Sample Multi-Photo Helper Bar -->
+          <div class="mt-2.5 flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <span class="text-[11px] text-slate-600 font-medium flex items-center">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500 mr-1.5"></i> ตัวเลือกเพิ่มชุดภาพตัวอย่างรวดเร็ว:
+            </span>
+            <button type="button" onclick="addSampleMultiPhotos()" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 hover:border-indigo-300 rounded-lg text-[11px] font-semibold text-indigo-600 transition shadow-sm">
+              + เพิ่มตัวอย่าง 5 รูปภาพ
+            </button>
+          </div>
+
+          <!-- Uploaded Files Preview Grid with Individual Remove Buttons -->
+          <div id="previewGrid" class="grid grid-cols-4 sm:grid-cols-5 gap-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar p-1 border border-slate-100 rounded-xl bg-slate-50/50"></div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
+          <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-xl">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-md transition flex items-center space-x-1.5">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            <span>บันทึกอัลบั้มรูปภาพ</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ALBUM DETAIL & LIGHTBOX MODAL WITH ADD MORE PHOTOS CAPABILITY -->
+  <div id="viewAlbumModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-6">
+    <div class="bg-white w-full max-w-5xl rounded-3xl border border-slate-200 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+        <div>
+          <div class="flex items-center space-x-2 mb-1">
+            <span id="modalCatTag" class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+              หมวดหมู่
+            </span>
+            <span id="modalDateTag" class="text-xs text-slate-500">วันที่สร้าง</span>
+            <span id="modalPhotoCountTag" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-amber-300">
+              0 รูป
+            </span>
+          </div>
+          <h3 id="modalAlbumTitle" class="text-lg sm:text-xl font-bold text-slate-900">ชื่ออัลบั้ม</h3>
+          <p id="modalAlbumDesc" class="text-xs text-slate-500 mt-0.5">คำอธิบาย</p>
+        </div>
+        
+        <div class="flex items-center space-x-2 self-end sm:self-auto">
+          <!-- Button to append multiple photos into this existing album -->
+          <button id="appendPhotosBtn" onclick="triggerAppendPhotosToCurrentAlbum()" class="px-3 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-1.5">
+            <i data-lucide="image-plus" class="w-4 h-4"></i>
+            <span>+ เพิ่มรูปภาพในอัลบั้มนี้</span>
+          </button>
+          <input type="file" id="appendFileInput" multiple accept="image/*" onchange="handleAppendPhotosSelect(event)" class="hidden">
+
+          <button onclick="closeViewModal()" aria-label="ปิดหน้าต่าง" class="text-slate-400 hover:text-slate-700 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition">
+            <i data-lucide="x" class="w-6 h-6"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Photos Grid inside Lightbox -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-grow custom-scrollbar bg-slate-100/50">
+        <div id="modalPhotosGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <!-- Photos inserted via JS -->
+        </div>
+      </div>
+
+      <!-- Modal Footer Info -->
+      <div class="p-4 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="user-check" class="w-4 h-4 text-amber-600"></i>
+          <span>อัปโหลดโดย: <strong id="modalUploaderName" class="text-slate-800">คุณครู</strong></span>
+        </div>
+        <button onclick="closeViewModal()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition text-xs font-medium">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script>
+    // --- APP STATE DATA ---
+    let currentUser = null;
+    let authMode = 'login'; // 'login' or 'register'
+    let captchaTargetAnswer = 8;
+    let selectedFilesData = []; // Array storing data URLs for multi-photo batch upload
+    let activeViewingAlbumId = null;
+    let currentCategory = 'ทั้งหมด';
+    const MAX_MB = 10;
+
+    // DEMO ONLY: บัญชีเก็บในหน้าเว็บ (ไม่ปลอดภัยจริง) — ระบบจริงต้องตรวจสอบที่เซิร์ฟเวอร์
+    const USERS = {
+      'teacher@kuson.ac.th': { password: 'Kuson2026!', name: 'ครูสมชาย ใจดี', role: 'ครูผู้ดูแลระบบ' },
+      '6601234': { password: 'Student123!', name: 'ด.ช. กิตติพงษ์ สุขสวัสดิ์', role: 'นักเรียน' }
+    };
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const isAdmin = () => !!currentUser && currentUser.role === 'ครูผู้ดูแลระบบ';
+    function canView(a) {
+      if (!currentUser) return false;
+      if (a.privacy !== 'ส่วนตัว') return true;
+      return a.ownerId === currentUser.id || isAdmin();
+    }
+    function canEdit(a) { return !!currentUser && (a.ownerId === currentUser.id || isAdmin()); }
+    function refreshList() { renderAlbums(currentCategory, document.getElementById('searchInput').value); }
+
+    function readFile(file) {
+      return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+    }
+    async function filterImages(files) {
+      const ok = []; let skipped = 0;
+      Array.from(files).forEach(f => (f.type.startsWith('image/') && f.size <= MAX_MB * 1048576) ? ok.push(f) : skipped++);
+      if (skipped) showToast(`ข้าม ${skipped} ไฟล์ (ต้องเป็นรูปภาพและไม่เกิน ${MAX_MB} MB)`, 'error');
+      return Promise.all(ok.map(readFile)); // คงลำดับตามที่เลือก
+    }
+    function setupModalClose() {
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeViewModal(); closeCreateModal(); } });
+      [['createModal', () => closeCreateModal()], ['viewAlbumModal', () => closeViewModal()]].forEach(([id, fn]) => {
+        const m = document.getElementById(id);
+        m.addEventListener('click', e => { if (e.target === m) fn(); });
+      });
+    }
+
+    // Pre-populated Sample Album Data with multiple photos each
+    let albumsData = [
+      {
+        id: 'alb-1',
+        title: 'พิธีไหว้ครู ประจำปีการศึกษา 2569',
+        category: 'คุณธรรมและศาสนา',
+        description: 'พิธีแสดงความเคารพกตัญญูกตเวทิตาต่อครูบาอาจารย์ โรงเรียนกุศลวิทยา',
+        author: 'ครูสมชาย ใจดี',
+        role: 'ครูผู้ดูแลระบบ',
+        privacy: 'สาธารณะ',
+        date: '12 มิถุนายน 2569',
+        coverImage: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80',
+        photos: [
+          'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80'
+        ]
+      },
+      {
+        id: 'alb-2',
+        title: 'การแข่งขันกีฬาสี "กุศลเกมส์ 2569"',
+        category: 'กีฬาสี',
+        description: 'การแข่งขันกีฬาภายในและการประกวดขบวนพาเหรด ดรัมเมเยอร์ กองเชียร์',
+        author: 'ด.ช. กิตติพงษ์ สุขสวัสดิ์',
+        role: 'นักเรียน',
+        privacy: 'สาธารณะ',
+        date: '20 มกราคม 2569',
+        coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
+        photos: [
+          'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1517649763962-0c6232662000?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1519315901367-f34ff9154487?auto=format&fit=crop&w=800&q=80'
+        ]
+      },
+      {
+        id: 'alb-3',
+        title: 'การนิทรรศการเปิดโลกวิชาการ และ AI เพื่อการเรียนรู้',
+        category: 'กิจกรรมวิชาการ',
+        description: 'ผลงานโครงงานวิทยาศาสตร์และนวัตกรรมหุ่นยนต์ของนักเรียนโรงเรียนกุศลวิทยา',
+        author: 'ครูสมชาย ใจดี',
+        role: 'ครูผู้ดูแลระบบ',
+        privacy: 'เฉพาะภายใน',
+        date: '15 กุมภาพันธ์ 2569',
+        coverImage: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80',
+        photos: [
+          'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
+        ]
+      },
+      {
+        id: 'alb-4',
+        title: 'ภาพบรรยากาศอาคารเรียนและสวนพฤกษศาสตร์โรงเรียน',
+        category: 'ภาพบรรยากาศโรงเรียน',
+        description: 'ภูมิทัศน์ความร่มรื่นและสิ่งอำนวยความสะดวกภายในโรงเรียนกุศลวิทยา',
+        author: 'ครูสมชาย ใจดี',
+        role: 'ครูผู้ดูแลระบบ',
+        privacy: 'สาธารณะ',
+        date: '5 พฤษภาคม 2569',
+        coverImage: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80',
+        photos: [
+          'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80'
+        ]
+      }
+    ];
+
+    albumsData.forEach(a => { a.ownerId = a.author.startsWith('ครู') ? 'teacher@kuson.ac.th' : '6601234'; });
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      lucide.createIcons();
+      generateCaptcha();
+      setupDragAndDrop();
+      setupModalClose();
+      document.getElementById('statPhotos').innerText = albumsData.reduce((n, a) => n + a.photos.length, 0);
+    };
+
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById('dropZone');
+      if (!dropZone) return;
+
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+          dropZone.classList.add('border-indigo-600', 'bg-indigo-50/70');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+          dropZone.classList.remove('border-indigo-600', 'bg-indigo-50/70');
+        }, false);
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          processMultipleFiles(files);
+        }
+      }, false);
+    }
+
+    // Generate Math Captcha
+    function generateCaptcha() {
+      const num1 = Math.floor(Math.random() * 9) + 1;
+      const num2 = Math.floor(Math.random() * 9) + 1;
+      captchaTargetAnswer = num1 + num2;
+      const captchaEl = document.getElementById('captchaQuestion');
+      if (captchaEl) {
+        captchaEl.innerText = `${num1} + ${num2} = ?`;
+      }
+    }
+
+    // Toggle Auth Form View
+    function toggleAuthMode(mode) {
+      authMode = mode;
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const tabLoginBtn = document.getElementById('tabLoginBtn');
+      const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+      const demoPills = document.getElementById('demoPills');
+
+      if (mode === 'login') {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        demoPills.classList.remove('hidden');
+        tabLoginBtn.className = 'flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition duration-200 bg-indigo-600 text-white shadow-sm';
+        tabRegisterBtn.className = 'flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition duration-200 text-slate-600 hover:text-slate-900';
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        demoPills.classList.add('hidden');
+        tabRegisterBtn.className = 'flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition duration-200 bg-emerald-600 text-white shadow-sm';
+        tabLoginBtn.className = 'flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition duration-200 text-slate-600 hover:text-slate-900';
+      }
+    }
+
+    // Quick Fill Demo Accounts
+    function fillDemo(type) {
+      if (type === 'teacher') {
+        document.getElementById('loginId').value = 'teacher@kuson.ac.th';
+        document.getElementById('loginPassword').value = 'Kuson2026!';
+      } else {
+        document.getElementById('loginId').value = '6601234';
+        document.getElementById('loginPassword').value = 'Student123!';
+      }
+      document.getElementById('captchaAnswer').value = captchaTargetAnswer;
+      showToast('กรอกข้อมูลทดลองแล้ว สามารถกดเข้าสู่ระบบได้เลย', 'info');
+    }
+
+    // Password Strength Meter
+    function checkPasswordStrength(val) {
+      const b1 = document.getElementById('strBar1');
+      const b2 = document.getElementById('strBar2');
+      const b3 = document.getElementById('strBar3');
+      const txt = document.getElementById('strText');
+
+      let score = 0;
+      if (val.length >= 6) score++;
+      if (/[A-Za-z]/.test(val) && /[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val) && val.length >= 8) score++;
+
+      b1.className = 'h-1 flex-1 rounded-full transition-all bg-slate-200';
+      b2.className = 'h-1 flex-1 rounded-full transition-all bg-slate-200';
+      b3.className = 'h-1 flex-1 rounded-full transition-all bg-slate-200';
+
+      if (score === 1) {
+        b1.className = 'h-1 flex-1 rounded-full transition-all bg-red-500';
+        txt.innerText = 'รหัสผ่านง่ายเกินไป';
+        txt.className = 'text-[10px] text-red-500 ml-1';
+      } else if (score === 2) {
+        b1.className = 'h-1 flex-1 rounded-full transition-all bg-amber-500';
+        b2.className = 'h-1 flex-1 rounded-full transition-all bg-amber-500';
+        txt.innerText = 'รหัสผ่านปานกลาง';
+        txt.className = 'text-[10px] text-amber-600 ml-1';
+      } else if (score === 3) {
+        b1.className = 'h-1 flex-1 rounded-full transition-all bg-emerald-500';
+        b2.className = 'h-1 flex-1 rounded-full transition-all bg-emerald-500';
+        b3.className = 'h-1 flex-1 rounded-full transition-all bg-emerald-500';
+        txt.innerText = 'รหัสผ่านปลอดภัยสูง';
+        txt.className = 'text-[10px] text-emerald-600 ml-1';
+      } else {
+        txt.innerText = 'ความปลอดภัยรหัสผ่าน';
+        txt.className = 'text-[10px] text-slate-500 ml-1';
+      }
+    }
+
+    // Toggle Password Visibility
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>`;
+      lucide.createIcons();
+    }
+
+    // Handle Login Submit
+    function handleLogin(e) {
+      e.preventDefault();
+      const loginId = document.getElementById('loginId').value.trim();
+      const userAns = parseInt(document.getElementById('captchaAnswer').value);
+
+      if (userAns !== captchaTargetAnswer) {
+        showToast('คำตอบการยืนยันตัวตน (Captcha) ไม่ถูกต้อง', 'error');
+        generateCaptcha();
+        return;
+      }
+
+      const account = USERS[loginId];
+      if (!account || account.password !== document.getElementById('loginPassword').value) {
+        showToast('รหัสประจำตัวหรือรหัสผ่านไม่ถูกต้อง', 'error');
+        document.getElementById('captchaAnswer').value = '';
+        generateCaptcha();
+        return;
+      }
+      currentUser = { id: loginId, name: account.name, role: account.role };
+      currentCategory = 'ทั้งหมด';
+      document.getElementById('searchInput').value = '';
+      filterCategory('ทั้งหมด', document.querySelector('.cat-pill'));
+      
+      // Update UI Views
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('mainHeader').classList.remove('hidden');
+      document.getElementById('gallerySection').classList.remove('hidden');
+
+      document.getElementById('userNameDisplay').innerText = currentUser.name;
+      document.getElementById('userRoleDisplay').innerText = currentUser.role;
+      document.getElementById('userAvatar').innerText = currentUser.name.charAt(0);
+
+      showToast(`ยินดีต้อนรับเข้าสู่ระบบ, ${currentUser.name}`, 'success');
+      refreshList();
+    }
+
+    // Handle Registration Submit
+    function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('regName').value.trim();
+      const role = document.getElementById('regRole').value;
+      const pass = document.getElementById('regPassword').value;
+      const confirmPass = document.getElementById('regConfirmPassword').value;
+
+      if (pass !== confirmPass) {
+        showToast('รหัสผ่านและรหัสผ่านยืนยันไม่ตรงกัน', 'error');
+        return;
+      }
+
+      if (pass.length < 6) {
+        showToast('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', 'error');
+        return;
+      }
+
+      const newId = document.getElementById('regId').value.trim();
+      if (USERS[newId]) { showToast('รหัสประจำตัว/อีเมลนี้ถูกใช้งานแล้ว', 'error'); return; }
+      USERS[newId] = { password: pass, name: name, role: role };
+      showToast('สมัครสมาชิกสำเร็จแล้ว! กรุณาเข้าสู่ระบบด้วยบัญชีใหม่', 'success');
+      toggleAuthMode('login');
+      document.getElementById('loginId').value = document.getElementById('regId').value;
+      document.getElementById('loginPassword').value = '';
+    }
+
+    // Handle Logout
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('mainHeader').classList.add('hidden');
+      document.getElementById('gallerySection').classList.add('hidden');
+      document.getElementById('loginPassword').value = '';
+      generateCaptcha();
+      document.getElementById('captchaAnswer').value = '';
+      closeViewModal();
+      closeCreateModal();
+      showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
+    }
+
+    // Render Albums Grid
+    function renderAlbums(categoryFilter = 'ทั้งหมด', searchQuery = '') {
+      const grid = document.getElementById('albumsGrid');
+      const emptyState = document.getElementById('emptyState');
+      grid.innerHTML = '';
+
+      let filtered = albumsData.filter(album => {
+        if (!canView(album)) return false;
+        // Category Check
+        let matchesCat = false;
+        if (categoryFilter === 'ทั้งหมด') matchesCat = true;
+        else if (categoryFilter === 'อัลบั้มของฉัน') {
+          matchesCat = !!currentUser && album.ownerId === currentUser.id;
+        } else {
+          matchesCat = (album.category === categoryFilter);
+        }
+
+        // Search Query Check
+        let matchesSearch = true;
+        if (searchQuery.trim() !== '') {
+          const q = searchQuery.toLowerCase();
+          matchesSearch = album.title.toLowerCase().includes(q) || 
+                          album.description.toLowerCase().includes(q) ||
+                          album.author.toLowerCase().includes(q);
+        }
+
+        return matchesCat && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      filtered.forEach(album => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition duration-300 hover:-translate-y-1 shadow-sm flex flex-col group';
+        
+        card.innerHTML = `
+          <div class="relative h-48 bg-slate-100 overflow-hidden cursor-pointer" onclick="openViewModal('${album.id}')">
+            <img loading="lazy" src="${esc(album.coverImage)}" alt="${esc(album.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/475569?text=Kuson+Gallery'">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+            
+            <span class="absolute top-3 left-3 text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-md text-indigo-700 shadow-sm">
+              ${esc(album.category)}
+            </span>
+
+            <span class="absolute bottom-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-900/80 text-amber-300 backdrop-blur-sm flex items-center space-x-1 shadow">
+              <i data-lucide="images" class="w-3.5 h-3.5 mr-1 text-amber-300"></i>${album.photos.length} รูป
+            </span>
+          </div>
+
+          <div class="p-4 flex-grow flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-indigo-600 transition cursor-pointer" onclick="openViewModal('${album.id}')">
+                ${esc(album.title)}
+              </h4>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                ${esc(album.description) || 'ไม่มีคำอธิบายเพิ่มเติม'}
+              </p>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <div class="flex items-center space-x-1.5">
+                <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="truncate max-w-[120px] font-medium">${esc(album.author)}</span>
+              </div>
+              <button onclick="openViewModal('${album.id}')" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1">
+                <span>เปิดดู (${album.photos.length} รูป)</span>
+                <i data-lucide="arrow-right" class="w-3 h-3"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Category Filter Switch
+    function filterCategory(catName, btn) {
+      document.querySelectorAll('.cat-pill').forEach(b => {
+        b.className = 'cat-pill px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-slate-100 text-slate-700 hover:bg-slate-200';
+      });
+      btn.className = 'cat-pill active-cat px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition bg-indigo-600 text-white shadow-sm';
+      currentCategory = catName;
+      renderAlbums(catName, document.getElementById('searchInput').value);
+    }
+
+    // Live Search
+    function handleSearch(val) {
+      renderAlbums(currentCategory, val);
+    }
+
+
+    // Multi-File Upload Processing logic
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      processMultipleFiles(files).then(() => { e.target.value = ''; });
+    }
+
+    async function processMultipleFiles(files) {
+      const urls = await filterImages(files);
+      selectedFilesData.push(...urls);
+      renderSelectedPreviews();
+    }
+
+    // Add preset sample photos for quick testing
+    function addSampleMultiPhotos() {
+      const samplePhotos = [
+        'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80'
+      ];
+      selectedFilesData = selectedFilesData.concat(samplePhotos);
+      renderSelectedPreviews();
+      showToast('เพิ่มรูปภาพตัวอย่าง 5 ภาพเรียบร้อยแล้ว', 'success');
+    }
+
+    // Render Preview Thumbnails with Individual Remove Buttons
+    function renderSelectedPreviews() {
+      const previewGrid = document.getElementById('previewGrid');
+      const badge = document.getElementById('selectedCountBadge');
+      previewGrid.innerHTML = '';
+
+      if (badge) {
+        badge.innerText = `เลือกแล้ว ${selectedFilesData.length} รูป`;
+      }
+
+      selectedFilesData.forEach((imgUrl, index) => {
+        const item = document.createElement('div');
+        item.className = 'relative h-20 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 group shadow-sm';
+        item.innerHTML = `
+          <img loading="lazy" src="${imgUrl}" class="w-full h-full object-cover">
+          <button type="button" onclick="removeSelectedPhoto(${index})" class="absolute top-1 right-1 bg-red-600/90 hover:bg-red-700 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow transition opacity-90 group-hover:opacity-100" title="ลบภาพนี้">
+            ×
+          </button>
+          <span class="absolute bottom-1 left-1 bg-slate-900/70 text-white text-[9px] px-1 rounded font-mono">
+            #${index + 1}
+          </span>
+        `;
+        previewGrid.appendChild(item);
+      });
+    }
+
+    // Remove single photo from current selection batch
+    function removeSelectedPhoto(index) {
+      selectedFilesData.splice(index, 1);
+      renderSelectedPreviews();
+    }
+
+    // Open/Close Create Modal
+    function openCreateModal() {
+      if (!currentUser) {
+        showToast('กรุณาเข้าสู่ระบบก่อนทำการสร้างอัลบั้ม', 'error');
+        return;
+      }
+      document.querySelector('#createModal form').reset();
+      document.getElementById('createModal').classList.remove('hidden');
+      selectedFilesData = [];
+      renderSelectedPreviews();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.add('hidden');
+    }
+
+    // Handle Create Album Form Submit
+    function handleCreateAlbum(e) {
+      e.preventDefault();
+      const title = document.getElementById('newAlbumTitle').value.trim();
+      const category = document.getElementById('newAlbumCategory').value;
+      const privacy = document.getElementById('newAlbumPrivacy').value;
+      const desc = document.getElementById('newAlbumDesc').value.trim();
+
+      if (selectedFilesData.length === 0) {
+        showToast('กรุณาเลือกรูปภาพอย่างน้อย 1 รูปสำหรับอัปโหลด', 'error');
+        return;
+      }
+
+      const newAlbum = {
+        id: 'alb-' + Date.now(),
+        ownerId: currentUser ? currentUser.id : null,
+        title: title,
+        category: category,
+        description: desc,
+        author: currentUser ? currentUser.name : 'ผู้ใช้งาน',
+        role: currentUser ? currentUser.role : 'สมาชิก',
+        privacy: privacy,
+        date: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
+        coverImage: selectedFilesData[0],
+        photos: [...selectedFilesData]
+      };
+
+      albumsData.unshift(newAlbum);
+      closeCreateModal();
+      refreshList();
+      showToast(`สร้างอัลบั้ม "${title}" และอัปโหลดภาพจำนวน ${selectedFilesData.length} รูปเรียบร้อยแล้ว!`, 'success');
+
+      // Reset form & state
+      e.target.reset();
+      selectedFilesData = [];
+      renderSelectedPreviews();
+    }
+
+
+    // Open View Album Lightbox
+    function openViewModal(albumId) {
+      const album = albumsData.find(a => a.id === albumId);
+      if (!album) return;
+
+      if (!canView(album)) return;
+      activeViewingAlbumId = albumId;
+      document.getElementById('appendPhotosBtn').classList.toggle('hidden', !canEdit(album));
+      document.getElementById('modalAlbumTitle').innerText = album.title;
+      document.getElementById('modalAlbumDesc').innerText = album.description || 'ไม่มีคำอธิบายเพิ่มเติม';
+      document.getElementById('modalCatTag').innerText = album.category;
+      document.getElementById('modalDateTag').innerText = album.date;
+      document.getElementById('modalPhotoCountTag').innerText = `${album.photos.length} รูปภาพ`;
+      document.getElementById('modalUploaderName').innerText = `${album.author} (${album.role})`;
+
+      renderAlbumPhotosInModal(album);
+      document.getElementById('viewAlbumModal').classList.remove('hidden');
+    }
+
+    function renderAlbumPhotosInModal(album) {
+      const grid = document.getElementById('modalPhotosGrid');
+      grid.innerHTML = '';
+
+      album.photos.forEach((photoUrl, idx) => {
+        const photoCard = document.createElement('div');
+        photoCard.className = 'group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-md transition duration-300';
+        photoCard.innerHTML = `
+          <img loading="lazy" src="${esc(photoUrl)}" class="w-full h-44 object-cover group-hover:scale-105 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/475569?text=Image'">
+          <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center space-x-2">
+            <a href="${esc(photoUrl)}" target="_blank" rel="noopener" download="kuson-photo-${idx + 1}.jpg" class="p-2.5 rounded-full bg-white/90 text-slate-800 hover:text-indigo-600 shadow-lg transition" title="ดาวน์โหลดภาพ">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </a>
+          </div>
+          <span class="absolute top-2 left-2 bg-slate-900/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md backdrop-blur-sm">
+            ${idx + 1} / ${album.photos.length}
+          </span>
+        `;
+        grid.appendChild(photoCard);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Trigger file picker to append photos to current active album
+    function triggerAppendPhotosToCurrentAlbum() {
+      if (!currentUser) {
+        showToast('กรุณาเข้าสู่ระบบก่อนทำการเพิ่มรูปภาพ', 'error');
+        return;
+      }
+      document.getElementById('appendFileInput').click();
+    }
+
+    async function handleAppendPhotosSelect(e) {
+      const files = e.target.files;
+      const album = albumsData.find(a => a.id === activeViewingAlbumId);
+      if (!files || !files.length || !album) return;
+      if (!canEdit(album)) { showToast('คุณไม่มีสิทธิ์เพิ่มรูปในอัลบั้มนี้', 'error'); e.target.value = ''; return; }
+      const urls = await filterImages(files);
+      e.target.value = '';
+      if (!urls.length) return;
+      album.photos.push(...urls);
+      document.getElementById('modalPhotoCountTag').innerText = `${album.photos.length} รูปภาพ`;
+      renderAlbumPhotosInModal(album);
+      refreshList();
+      showToast(`เพิ่มรูปภาพใหม่จำนวน ${urls.length} รูป เข้าสู่อัลบั้มเรียบร้อยแล้ว`, 'success');
+    }
+
+    function closeViewModal() {
+      activeViewingAlbumId = null;
+      document.getElementById('viewAlbumModal').classList.add('hidden');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bgColors = 'bg-white border-slate-200 text-slate-800 shadow-xl';
+      let icon = 'info';
+
+      if (type === 'success') {
+        bgColors = 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-xl';
+        icon = 'check-circle';
+      } else if (type === 'error') {
+        bgColors = 'bg-red-50 border-red-200 text-red-800 shadow-xl';
+        icon = 'alert-triangle';
+      } else if (type === 'info') {
+        bgColors = 'bg-indigo-50 border-indigo-200 text-indigo-800 shadow-xl';
+        icon = 'info';
+      }
+
+      toast.className = `pointer-events-auto flex items-center space-x-2.5 px-4 py-3 rounded-2xl border text-xs font-medium backdrop-blur-md transform transition-all duration-300 translate-y-2 opacity-0 ${bgColors}`;
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+        <span>${esc(message)}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      // Animate In
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Remove after 3.5 seconds
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+  </script>
+<script>
+/* ===== โหมดเชื่อมต่อ Google Apps Script: วาง URL ของ Web App (ลงท้าย /exec) ที่นี่ ===== */
+const API_URL = '';
+const IN_GAS = !!(window.google && google.script && google.script.run);
+if (API_URL || IN_GAS) (() => {
+  let token = null;
+  const api = async (action, data = {}) => {
+    const payload = JSON.stringify({ action, token, ...data });
+    const raw = IN_GAS
+      ? await new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler(er => no(new Error(er.message))).api(payload))
+      : await (await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload })).text();
+    const j = JSON.parse(raw);
+    if (!j.ok) {
+      if (j.error === 'SESSION') { token = null; window.handleLogout(); throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
+      throw new Error(j.error || 'เกิดข้อผิดพลาด');
+    }
+    return j;
+  };
+  const thumb = id => `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+  const load = async () => {
+    const j = await api('list');
+    albumsData = j.albums.map(a => ({ ...a, coverImage: a.photos[0] ? thumb(a.photos[0]) : '', photos: a.photos.map(thumb) }));
+    refreshList();
+  };
+  const shrink = url => new Promise((ok, no) => { // ย่อรูปไม่เกิน 1600px ก่อนอัปโหลด
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      ok(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    };
+    img.onerror = no; img.src = url;
+  });
+  const upload = async (albumId, urls, onProgress) => {
+    for (let i = 0; i < urls.length; i++) {
+      onProgress(i + 1, urls.length);
+      await api('addPhoto', { albumId, name: `photo-${Date.now()}-${i + 1}.jpg`, mime: 'image/jpeg', data: await shrink(urls[i]) });
+    }
+  };
+  const busy = (btn, on, label) => {
+    if (!btn) return;
+    const s = btn.querySelector('span');
+    btn.disabled = on;
+    if (s) { if (on) { btn.dataset.l = btn.dataset.l || s.innerText; s.innerText = label; } else if (btn.dataset.l) s.innerText = btn.dataset.l; }
+  };
+  const enter = () => {
+    document.getElementById('authSection').classList.add('hidden');
+    document.getElementById('mainHeader').classList.remove('hidden');
+    document.getElementById('gallerySection').classList.remove('hidden');
+    document.getElementById('userNameDisplay').innerText = currentUser.name;
+    document.getElementById('userRoleDisplay').innerText = currentUser.role;
+    document.getElementById('userAvatar').innerText = currentUser.name.charAt(0);
+    currentCategory = 'ทั้งหมด';
+    document.getElementById('searchInput').value = '';
+    filterCategory('ทั้งหมด', document.querySelector('.cat-pill'));
+  };
+
+  window.handleLogin = async e => {
+    e.preventDefault();
+    if (parseInt(document.getElementById('captchaAnswer').value) !== captchaTargetAnswer) {
+      showToast('คำตอบการยืนยันตัวตน (Captcha) ไม่ถูกต้อง', 'error'); generateCaptcha(); return;
+    }
+    busy(e.submitter, true, 'กำลังเข้าสู่ระบบ...');
+    try {
+      const j = await api('login', { id: document.getElementById('loginId').value.trim(), password: document.getElementById('loginPassword').value });
+      token = j.token; currentUser = j.user; enter(); await load();
+      showToast(`ยินดีต้อนรับเข้าสู่ระบบ, ${currentUser.name}`, 'success');
+    } catch (err) {
+      showToast(err.message, 'error'); generateCaptcha(); document.getElementById('captchaAnswer').value = '';
+    } finally { busy(e.submitter, false); }
+  };
+
+  window.handleRegister = async e => {
+    e.preventDefault();
+    const g = id => document.getElementById(id).value;
+    if (g('regPassword') !== g('regConfirmPassword')) { showToast('รหัสผ่านและรหัสผ่านยืนยันไม่ตรงกัน', 'error'); return; }
+    busy(e.submitter, true, 'กำลังสมัคร...');
+    try {
+      const j = await api('register', { id: g('regId').trim(), name: g('regName').trim(), role: g('regRole'), password: g('regPassword') });
+      showToast(j.message, 'success'); toggleAuthMode('login');
+      document.getElementById('loginId').value = g('regId').trim(); e.target.reset();
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { busy(e.submitter, false); }
+  };
+
+  const origLogout = window.handleLogout;
+  window.handleLogout = () => { if (token) api('logout').catch(() => {}); token = null; albumsData = []; origLogout(); };
+
+  window.handleCreateAlbum = async e => {
+    e.preventDefault();
+    if (!selectedFilesData.length) { showToast('กรุณาเลือกรูปภาพอย่างน้อย 1 รูปสำหรับอัปโหลด', 'error'); return; }
+    const form = e.target, btn = e.submitter, files = [...selectedFilesData];
+    const v = id => document.getElementById(id).value.trim();
+    busy(btn, true, 'กำลังสร้างอัลบั้ม...');
+    try {
+      const { albumId } = await api('createAlbum', { title: v('newAlbumTitle'), category: v('newAlbumCategory'), privacy: v('newAlbumPrivacy'), description: v('newAlbumDesc') });
+      await upload(albumId, files, (i, n) => busy(btn, true, `กำลังอัปโหลด ${i}/${n}`));
+      closeCreateModal(); form.reset(); selectedFilesData = []; renderSelectedPreviews();
+      await load();
+      showToast(`สร้างอัลบั้มและอัปโหลดภาพ ${files.length} รูปเรียบร้อยแล้ว!`, 'success');
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { busy(btn, false); }
+  };
+
+  window.handleAppendPhotosSelect = async e => {
+    const album = albumsData.find(a => a.id === activeViewingAlbumId);
+    const files = e.target.files;
+    if (!files || !files.length || !album) return;
+    const urls = await filterImages(files);
+    e.target.value = '';
+    if (!urls.length) return;
+    try {
+      await upload(album.id, urls, (i, n) => showToast(`กำลังอัปโหลด ${i}/${n}`, 'info'));
+      await load(); openViewModal(album.id);
+      showToast(`เพิ่มรูปภาพ ${urls.length} รูปเรียบร้อยแล้ว`, 'success');
+    } catch (err) { showToast(err.message, 'error'); }
+  };
+
+  document.getElementById('demoPills').style.display = 'none';
+  document.querySelector('[onclick="addSampleMultiPhotos()"]').parentElement.style.display = 'none';
+  document.getElementById('statPhotos').innerText = '–';
+})();
+</script>
+<script>
+/* ป้ายแสดงสถานะการเชื่อมต่อ: เขียว = บันทึกลงชีตจริง, แดง = โหมดเดโม (ไม่บันทึก) */
+(() => {
+  const on = !!(API_URL || IN_GAS);
+  const b = document.createElement('div');
+  b.id = 'connBadge';
+  b.textContent = on ? '● เชื่อมต่อฐานข้อมูลแล้ว' : '● โหมดเดโม: ข้อมูลไม่ถูกบันทึกลงชีต';
+  b.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:9999;padding:4px 12px;border-radius:999px;font:12px sans-serif;color:#fff;background:' + (on ? '#059669' : '#dc2626');
+  document.body.appendChild(b);
+  window.addEventListener('error', e => { b.textContent = '● สคริปต์ผิดพลาด: ' + e.message; b.style.background = '#dc2626'; });
+})();
+</script>
+</body>
+</html>
